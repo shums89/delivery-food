@@ -1,4 +1,7 @@
 'use strict';
+import Swiper from 'https://unpkg.com/swiper/swiper-bundle.esm.browser.min.js'
+
+const RED_COLOR = '#ff0000';
 
 const cartButton = document.querySelector("#cart-button");
 const modal = document.querySelector(".modal");
@@ -23,6 +26,20 @@ const cardsMenu = document.querySelector('.cards-menu');
 
 let login = localStorage.getItem('gloDelivery');
 
+function validName(str) {
+  // Имя пользователя (с ограничением 2-20 символов, которыми могут быть буквы и цифры, первый символ обязательно буква)
+  const regNName = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/;
+
+  return regNName.test(str);
+}
+
+function validPassword(str) {
+  // Пароль (Строчные и прописные латинские буквы, цифры, спецсимволы. Минимум 8 символов)
+  const regNName = /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/;
+
+  return regNName.test(str);
+}
+
 function toggleModal() {
   modal.classList.toggle("is-open");
 }
@@ -35,7 +52,6 @@ function toggleModalAuth() {
   } else {
     enableScroll();
   }
-
 }
 
 function clearForm() {
@@ -71,7 +87,8 @@ function authorized() {
 function noAuthorized() {
   function logIn(evt) {
     evt.preventDefault();
-    if (loginInput.value.trim() && loginPassword.value.trim()) {
+
+    if (validName(loginInput.value) && validPassword(loginPassword.value)) {
       login = loginInput.value;
       localStorage.setItem('gloDelivery', login);
       toggleModalAuth();
@@ -83,11 +100,13 @@ function noAuthorized() {
 
       logInForm.reset();
       checkAuth();
-    } else if (!loginInput.value.trim()) {
-      loginInput.style.borderColor = '#ff0000';
+    } else if (!validName(loginInput.value)) {
+      alert('Имя пользователя: с ограничением 2-20 символов, которыми могут быть буквы и цифры, первый символ обязательно буква');
+      loginInput.style.borderColor = RED_COLOR;
       loginInput.value = '';
-    } else {
-      loginPassword.style.borderColor = '#ff0000';
+    } else if (!validPassword(loginPassword.value)) {
+      alert('Пароль: cтрочные и прописные латинские буквы, цифры, спецсимволы. Минимум 8 символов');
+      loginPassword.style.borderColor = RED_COLOR;
       loginPassword.value = '';
     }
   }
@@ -165,16 +184,20 @@ function openGoods(evt) {
   const target = evt.target;
   const restaurant = target.closest('.card-restaurant');
 
-  if (restaurant) {
-    cardsMenu.textContent = '';
+  if (login) {
+    if (restaurant) {
+      cardsMenu.textContent = '';
 
-    containerPromo.classList.add('hide');
-    restaurants.classList.add('hide');
-    menu.classList.remove('hide');
+      containerPromo.classList.add('hide');
+      restaurants.classList.add('hide');
+      menu.classList.remove('hide');
 
-    createCardGood();
-    createCardGood();
-    createCardGood();
+      createCardGood();
+      createCardGood();
+      createCardGood();
+    }
+  } else {
+    toggleModalAuth();
   }
 }
 
@@ -193,3 +216,31 @@ checkAuth();
 createCardRestaurant();
 createCardRestaurant();
 createCardRestaurant();
+
+// Слайдер
+
+new Swiper('.swiper-container', {
+  sliderPerView: 1,
+  loop: true,
+  autoplay: true,
+  /*
+  grapCursor: true,
+  effect: 'cube',
+  cubeEffect: {
+    shadow: false,
+  },
+  pagination: {
+    el: '.swiper-pagination',
+    clickable: true,
+  },
+  navigation: {
+    nextEl: '.swiper-button-next',
+    prevEl: '.swiper-button-prev',
+  },
+  */
+  effect: 'coverflow',
+  scrollbar: {
+    el: '.swiper-scrollbar',
+    draggable: true,
+  },
+})
