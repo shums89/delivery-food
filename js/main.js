@@ -1,6 +1,33 @@
 'use strict';
 import Swiper from 'https://unpkg.com/swiper/swiper-bundle.esm.browser.min.js'
 
+// Слайдер
+const swiper = new Swiper('.swiper-container', {
+  sliderPerView: 1,
+  loop: true,
+  autoplay: true,
+  /*
+  grapCursor: true,
+  effect: 'cube',
+  cubeEffect: {
+    shadow: false,
+  },
+  pagination: {
+    el: '.swiper-pagination',
+    clickable: true,
+  },
+  navigation: {
+    nextEl: '.swiper-button-next',
+    prevEl: '.swiper-button-prev',
+  },
+  */
+  effect: 'coverflow',
+  scrollbar: {
+    el: '.swiper-scrollbar',
+    draggable: true,
+  },
+})
+
 const RED_COLOR = '#ff0000';
 
 const cartButton = document.querySelector("#cart-button");
@@ -22,11 +49,11 @@ const restaurants = document.querySelector('.restaurants');
 const menu = document.querySelector('.menu');
 const logo = document.querySelector('.logo');
 const cardsMenu = document.querySelector('.cards-menu');
-const restaurantTitle = document.querySelector('.restaurant-title')
-const restaurantRating = document.querySelector('.rating')
-const restaurantPrice = document.querySelector('.price')
-const restaurantcategory = document.querySelector('.category')
-const inputSearch = document.querySelector('.input-search')
+const restaurantTitle = document.querySelector('.restaurant-title');
+const restaurantRating = document.querySelector('.rating');
+const restaurantPrice = document.querySelector('.price');
+const restaurantcategory = document.querySelector('.category');
+const inputSearch = document.querySelector('.input-search');
 const modalBody = document.querySelector('.modal-body');
 const modalPrice = document.querySelector('.modal-pricetag');
 const buttonClearCart = document.querySelector('.clear-cart');
@@ -42,8 +69,18 @@ str.split('\n').map(string => string.trim()).forEach(item => {
 */
 
 let login = localStorage.getItem('gloDelivery');
+const cart = JSON.parse(localStorage.getItem(`gloDelivery_${login}`)) || [];
 
-const cart = [];
+function saveCart() {
+  localStorage.setItem(`gloDelivery_${login}`, JSON.stringify(cart));
+}
+
+function downloadCart() {
+  if (localStorage.getItem(`gloDelivery_${login}`)) {
+    const data = JSON.parse(localStorage.getItem(`gloDelivery_${login}`));
+    cart.pussh(...data);
+  }
+}
 
 const getData = async function (url) {
   const response = await fetch(url);
@@ -66,7 +103,8 @@ function validPassword(str) {
   // Пароль (Строчные и прописные латинские буквы, цифры, спецсимволы. Минимум 8 символов)
   const regNName = /(?=^.{8,}$)((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/;
 
-  return regNName.test(str);
+  // TODO return regNName.test(str);
+  return true;
 }
 
 function toggleModal() {
@@ -91,7 +129,8 @@ function clearForm() {
 }
 
 function returnMain() {
-  containerPromo.classList.add('hide');
+  containerPromo.classList.remove('hide');
+  swiper.init();
   restaurants.classList.add('hide');
   menu.classList.remove('hide');
 }
@@ -99,6 +138,7 @@ function returnMain() {
 function authorized() {
   function logOut() {
     login = null;
+    cart.length = 0;
     localStorage.removeItem('gloDelivery');
 
     buttonAuth.style.display = '';
@@ -129,6 +169,7 @@ function noAuthorized() {
       login = loginInput.value;
       localStorage.setItem('gloDelivery', login);
       toggleModalAuth();
+      downloadCart();
 
       buttonAuth.removeEventListener('click', toggleModalAuth);
       closeAuth.removeEventListener('click', toggleModalAuth);
@@ -137,6 +178,7 @@ function noAuthorized() {
 
       logInForm.reset();
       checkAuth();
+
     } else if (!validName(loginInput.value)) {
       alert('Имя пользователя: с ограничением 2-20 символов, которыми могут быть буквы и цифры, первый символ обязательно буква');
       loginInput.style.borderColor = RED_COLOR;
@@ -201,7 +243,7 @@ function createCardGood(goods) {
   const { description, image, name, price, id } = goods;
 
   card.insertAdjacentHTML('beforeend', `
-    <img src=${image} alt=${name} class="card-image" />
+    <img src=${image} alt=${name} class="card-image"/>
     <div class="card-text">
       <div class="card-heading">
         <h3 class="card-title card-title-reg">${name}</h3>
@@ -229,7 +271,10 @@ function openGoods(evt) {
   if (login) {
     if (restaurant) {
       cardsMenu.textContent = '';
-      returnMain();
+      containerPromo.classList.add('hide');
+      swiper.destroy(false);
+      restaurants.classList.add('hide');
+      menu.classList.remove('hide');
 
       const { kitchen, name, price, stars } = restaurant.info;
 
@@ -256,6 +301,7 @@ function addToCart(evt) {
 
   if (buttonAddToCart) {
     const card = target.closest('.card');
+    const image = card.querySelector('.card-image').src;
     const title = card.querySelector('.card-title-reg').textContent;
     const cost = card.querySelector('.card-price').textContent;
     const id = buttonAddToCart.id;
@@ -267,40 +313,60 @@ function addToCart(evt) {
     if (food) {
       food.count++;
     } else {
-      cart.push({ id, title, cost, count: 1 });
+      cart.push({ id, image, title, cost, count: 1 });
     }
+
+    saveCart();
   }
 }
 
 function renderCart() {
   modalBody.textContent = '';
 
-  cart.forEach(function ({ id, title, cost, count }) {
+  cart.forEach(function ({ id, image, title, cost, count }) {
     const itemCart = `
-    <div class="food-row">
-      <span class="food-name">${title}</span>
-      <strong class="food-price">${cost}</strong>
-      <div class="food-counter">
-        <button class="counter-button counter-minus" data-id=${id}>-</button>
-        <span class="counter">${count}</span>
-        <button class="counter-button counter-plus" data-id=${id}>+</button>
+      <div class="food-row">
+        <div class="foot-item">
+          <img src=${image} alt="${title}">
+          <span class="food-name">${title}</span>
+        </div>
+        <div class="food-desc">
+          <strong class="food-price">${cost}</strong>
+          <div class="food-counter">
+            <button class="counter-button counter-minus" data-id=${id}>-</button>
+            <span class="counter">${count}</span>
+            <button class="counter-button counter-plus" data-id=${id}>+</button>
+          </div>
+        </div>
       </div>
-    </div>
     `;
+    /*
+    const itemCart = `
+      <div class="food-row">
+        <span class="food-name">${title}</span>
+        <strong class="food-price">${cost}</strong>
+        <div class="food-counter">
+          <button class="counter-button counter-minus" data-id=${id}>-</button>
+          <span class="counter">${count}</span>
+          <button class="counter-button counter-plus" data-id=${id}>+</button>
+        </div>
+      </div>
+    `;
+    */
 
     modalBody.insertAdjacentHTML('beforeend', itemCart);
   });
 
   const totalPrice = cart.reduce(function (result, item) {
-    return result + (parseFloat(item.cost) + item.count);
+    return result + (parseFloat(item.cost) * item.count);
   }, 0);
 
   modalPrice.textContent = `${totalPrice} ₽`;
+  saveCart();
 }
 
 function changeCount(evt) {
   const target = evt.target;
-  console.log(target);
 
   if (target.classList.contains('counter-button')) {
     const food = cart.find(function (item) {
@@ -336,87 +402,80 @@ function init() {
   buttonClearCart.addEventListener('click', function () {
     cart.length = 0;
     renderCart();
+    renderCart();
+  });
+
+  logo.addEventListener('click', function () {
+    containerPromo.classList.remove('hide');
+    swiper.init();
+    restaurants.classList.remove('hide');
+    menu.classList.add('hide');
   });
 
   modalBody.addEventListener('click', changeCount);
   cardsMenu.addEventListener('click', addToCart);
   close.addEventListener('click', toggleModal);
   cardsRestaurants.addEventListener('click', openGoods);
-  logo.addEventListener('click', returnMain);
 
   checkAuth();
 
-  // Слайдер
-  new Swiper('.swiper-container', {
-    sliderPerView: 1,
-    loop: true,
-    autoplay: true,
-    /*
-    grapCursor: true,
-    effect: 'cube',
-    cubeEffect: {
-      shadow: false,
-    },
-    pagination: {
-      el: '.swiper-pagination',
-      clickable: true,
-    },
-    navigation: {
-      nextEl: '.swiper-button-next',
-      prevEl: '.swiper-button-prev',
-    },
-    */
-    effect: 'coverflow',
-    scrollbar: {
-      el: '.swiper-scrollbar',
-      draggable: true,
-    },
-  })
+  inputSearch.addEventListener('keyup', function (evt) {
+    const value = evt.target.value;
 
-  inputSearch.addEventListener('keypress', function (evt) {
-    if (evt.key === 'Enter') {
-      const value = evt.target.value;
+    if (!value && evt.key === 'Enter') {
+      evt.target.style.backgroundColor = RED_COLOR;
+      evt.target.value = '';
+      setTimeout(function () {
+        evt.target.style.backgroundColor = '';
+      }, 1500);
 
-      if (!value) {
-        evt.target.style.backgroundColor = RED_COLOR;
-        evt.target.value = '';
-        setTimeout(function () {
-          evt.target.style.backgroundColor = '';
-        }, 1500);
-
-        return;
-      }
-
-      getData(`./db/partners.json`)
-        .then(function (data) {
-          return data.map(function (partner) {
-            return partner.products;
-          });
-        })
-        .then(function (linksProduct) {
-          cardsMenu.textContent = '';
-
-          linksProduct.forEach(function (link) {
-            getData(`./db/${link}`)
-              .then(function (data) {
-                const resultSearch = data.filter(function (item) {
-                  const name = item.name.toLowerCase();
-
-                  return name.includes(value.toLowerCase());
-                });
-
-                returnMain();
-
-                restaurantTitle.textContent = 'Результат поиска';
-                restaurantRating.textContent = '';
-                restaurantPrice.textContent = '';
-                restaurantcategory.textContent = 'разная кухня';
-                resultSearch.forEach(createCardGood);
-              });
-          });
-        });
+      return;
     }
 
+    if (value.length < 3) {
+      return;
+    }
+
+    if (evt.which == "undefined") {
+    } else if (evt.which == "number" && evt.which > 0) {
+      if (evt.ctrlKey || evt.metaKey || evt.altKey || evt.which === 8) {
+        return;
+      } else if (!/^[А-Яа-яЁё]$/.test(evt.key)) {
+        return;
+      }
+    }
+
+    getData(`./db/partners.json`)
+      .then(function (data) {
+        return data.map(function (partner) {
+          return partner.products;
+        });
+      })
+      .then(function (linksProduct) {
+        cardsMenu.textContent = '';
+
+        linksProduct.forEach(function (link) {
+          getData(`./db/${link}`)
+            .then(function (data) {
+              const resultSearch = data.filter(function (item) {
+                const name = item.name.toLowerCase();
+
+                return name.includes(value.toLowerCase());
+              });
+
+              containerPromo.classList.add('hide');
+              swiper.destroy(false);
+              restaurants.classList.add('hide');
+              menu.classList.remove('hide');
+
+              restaurantTitle.textContent = 'Результат поиска';
+              restaurantRating.textContent = '';
+              restaurantPrice.textContent = '';
+              restaurantcategory.textContent = 'разная кухня';
+              resultSearch.forEach(createCardGood);
+            });
+        });
+      });
   });
 }
 
