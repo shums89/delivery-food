@@ -1,6 +1,6 @@
-# Учебный проект [Glo Academy](https://glo.academy/) на 4х-дневном интенсиве [Delivery Food](https://glo.academy/intensive/pishem-delivery-food-na-javascript/). 
-# Изучаем JavaScript.
-# Проект доступен по [ссылке](https://shums89.github.io/delivery-food/).
+# delivery-food
+
+### Учебный проект [Glo Academy](https://glo.academy/) на 4х-дневном интенсиве [Delivery Food](https://glo.academy/intensive/pishem-delivery-food-na-javascript/). Изучаем JavaScript. Проект доступен по [ссылке](https://shums89.github.io/delivery-food/).
 
 ДЕНЬ 1. "Авторизация".
 Напишем авторизацию в нашем проекте.
